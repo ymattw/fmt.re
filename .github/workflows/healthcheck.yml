@@ -1,0 +1,20 @@
+name: Health Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 23 * * *"
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Health check home pages
+      shell: bash
+      run: |
+        set -ex
+        curl -sI http://fmt.re | grep -F 'Location: https://fmt.re/'
+        curl -s https://fmt.re | grep -F 'github.com/ymattw'
+        curl -s https://last.re | grep 'http-equiv.*fmt.re'
+        curl -s https://joyus.org | grep 'http-equiv.*fmt.re'
