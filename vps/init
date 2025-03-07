@@ -12,6 +12,7 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
 function main
 {
+    install_pkgs
     create_user
     modify_user
     setup_ssh
@@ -20,7 +21,26 @@ function main
     setup_firewall
     setup_resolved
     disable_exim
-    install_pkgs
+}
+
+function install_pkgs
+{
+    sudo apt update -y
+    sudo apt install -y \
+        cron \
+        docker.io \
+        git \
+        locate \
+        make \
+        net-tools \
+        python3-venv \
+        qrencode \
+        rsync \
+        tmux \
+        tree \
+        ufw \
+        vim-nox \
+        zsh
 }
 
 function create_user
@@ -29,7 +49,7 @@ function create_user
 
     echo "Creating user $GITHUB_ID"
     sudo useradd --home-dir /home/$GITHUB_ID --create-home \
-        --shell /bin/bash $GITHUB_ID
+        --shell /bin/zsh $GITHUB_ID
     id $GITHUB_ID
 }
 
@@ -37,7 +57,6 @@ function modify_user
 {
     local home=$(eval echo ~${GITHUB_ID})
 
-    sudo chsh -s /bin/zsh $GITHUB_ID
     sudo usermod -a -G docker $GITHUB_ID
     [[ -f $home/.zshrc ]] || {
         # Set up a minimal zsh prompt
@@ -129,26 +148,6 @@ function disable_exim
     sudo systemctl status exim4 || return 0
     sudo systemctl stop exim4
     sudo systemctl disable exim4
-}
-
-function install_pkgs
-{
-    sudo apt update -y
-    sudo apt install -y \
-        cron \
-        docker.io \
-        git \
-        locate \
-        make \
-        net-tools \
-        python3-venv \
-        qrencode \
-        rsync \
-        tmux \
-        tree \
-        ufw \
-        vim-nox \
-        zsh
 }
 
 main "$@"
