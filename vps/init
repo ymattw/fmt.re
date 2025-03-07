@@ -136,6 +136,7 @@ function setup_firewall
 
 function setup_resolved
 {
+    [[ -f /etc/systemd/resolved.conf ]] || return 0
     ! grep -q '^LLMNR=no$' /etc/systemd/resolved.conf || return 0
     sudo sed -i'' -r \
         -e 's/^#?\s*LLMNR=.*/LLMNR=no/' \
@@ -145,6 +146,7 @@ function setup_resolved
 
 function disable_exim
 {
+    [[ -f /usr/sbin/exim4 ]] || return 0
     sudo systemctl status exim4 || return 0
     sudo systemctl stop exim4
     sudo systemctl disable exim4
