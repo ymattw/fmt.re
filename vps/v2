@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to setup v2ray on Ubuntu VPS. Verified versions: 22.04.1 LTS.
+# Script to setup v2ray on a VPS. Verified versions: Ubuntu 22.04.1 LTS, Debian 12.
 # Requires sudo and docker environment (see vps.sh).
 #
 # Example usage: curl -L fmt.re/vps/v2 | bash -s ymattw vps.example.com
@@ -12,7 +12,7 @@ REMARK="${2?:'Usage: $0 <github_username> <remark_prefix>'}"
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
-IMAGE="v2fly/v2fly-core:v5.23.0"
+IMAGE="v2fly/v2fly-core:v5.24.0"
 DIR="/opt/v2"
 PORT="60066"
 CONFIG="$DIR/config.json"
