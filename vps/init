@@ -21,6 +21,7 @@ function main
     setup_firewall
     setup_resolved
     disable_exim
+    disable_rpcbind
 }
 
 function install_pkgs
@@ -147,9 +148,17 @@ function setup_resolved
 function disable_exim
 {
     [[ -f /usr/sbin/exim4 ]] || return 0
-    sudo systemctl status exim4 || return 0
     sudo systemctl stop exim4
     sudo systemctl disable exim4
+}
+
+function disable_rpcbind
+{
+    [[ -f /sbin/rpcbind ]] || return 0
+    sudo systemctl stop rpcbind.service
+    sudo systemctl stop rpcbind.socket
+    sudo systemctl disable rpcbind.service
+    sudo systemctl disable rpcbind.socket
 }
 
 main "$@"
