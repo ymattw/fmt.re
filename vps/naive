@@ -53,6 +53,9 @@ function setup_config
         order forward_proxy before file_server
         admin :60441
         http_port 60442
+        log {
+            level info
+        }
     }
 
     :60443, $DOMAIN:60443 {
@@ -103,7 +106,7 @@ function setup_crontab
 
     {
         sudo crontab -lu $GITHUB_ID | grep -vw "$DIR/start.sh" || true
-        echo "*/2 * * * * pgrep -f ^./caddy >/dev/null 2>&1 || $DIR/start.sh 2>&1 | logger -it caddy"
+        echo "*/2 * * * * pgrep -f ^./caddy >/dev/null 2>&1 || $DIR/start.sh 2>&1 | logger -it caddy-naive"
     } | sudo -u $GITHUB_ID crontab
 
     sudo crontab -lu $GITHUB_ID

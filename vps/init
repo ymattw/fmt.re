@@ -18,6 +18,7 @@ function main
     setup_ssh
     setup_sshd
     setup_sudo
+    setup_kernal_params
     setup_firewall
     setup_resolved
     disable_exim
@@ -37,6 +38,7 @@ function install_pkgs
         python3-venv \
         qrencode \
         rsync \
+        systemd-resolved \
         tmux \
         tree \
         ufw \
@@ -126,6 +128,14 @@ function setup_sudo
     sudo -l -U $GITHUB_ID
 }
 
+function setup_kernal_params
+{
+    # https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes
+    echo "net.core.rmem_max=7500000" | sudo tee /etc/sysctl.d/99-udp-buffer-sizes
+    echo "net.core.wmem_max=7500000" | sudo tee -a /etc/sysctl.d/99-udp-buffer-sizes
+    sudo sysctl -p
+}
+
 function setup_firewall
 {
     sudo ufw default allow routed
@@ -137,11 +147,15 @@ function setup_firewall
 
 function setup_resolved
 {
-    [[ -f /etc/systemd/resolved.conf ]] || return 0
-    ! grep -q '^LLMNR=no$' /etc/systemd/resolved.conf || return 0
+    # NOTE! :53 is required for v2ray and naive to work
+    local conf="/etc/systemd/resolved.conf"
+    if grep -Eq '^DNS=.+' $conf && grep -Eq '^LLMNR=no$' $conf; then
+        return 0
+    fi
     sudo sed -i'' -r \
+        -e 's/^#DNS=.*/DNS=1.1.1.1 8.8.8.8/' \
         -e 's/^#?\s*LLMNR=.*/LLMNR=no/' \
-        /etc/systemd/resolved.conf
+        $conf
     sudo systemctl restart systemd-resolved
 }
 
