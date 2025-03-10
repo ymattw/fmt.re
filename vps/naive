@@ -51,7 +51,7 @@ function setup_config
     cat << EOT | sed -r 's/^ {4}//g' | sudo tee $CONFIG
     {
         order forward_proxy before file_server
-        admin localhost:60441
+        admin off
         auto_https disable_redirects
         log {
             level info
