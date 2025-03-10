@@ -30,6 +30,7 @@ function install_pkgs
     sudo apt update -y
     sudo apt install -y \
         cron \
+        curl \
         docker.io \
         git \
         locate \
