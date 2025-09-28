@@ -12,7 +12,7 @@ REMARK="${2?:'Usage: $0 <github_username> <remark_prefix>'}"
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
-IMAGE="v2fly/v2fly-core:v5.24.0"
+IMAGE="v2fly/v2fly-core:v5.30.0"
 DIR="/opt/v2"
 PORT="60066"
 CONFIG="$DIR/config.json"

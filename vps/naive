@@ -13,7 +13,7 @@ DOMAIN="${2?:'Usage: $0 <github_username> <domain_name>'}"
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
 DIR="/opt/naive"
-IMAGE="https://github.com/klzgrad/forwardproxy/releases/download/v2.9.1-naive/caddy-forwardproxy-naive.tar.xz"
+IMAGE="https://github.com/klzgrad/forwardproxy/releases/download/v2.10.0-naive/caddy-forwardproxy-naive.tar.xz"
 CONFIG="$DIR/Caddyfile"
 
 function main
