@@ -1,8 +1,21 @@
+<!doctype html>
 <html>
-<body>
-<pre>
-curl -L fmt.re/vps/init | bash -s ymattw
-curl -L fmt.re/vps/v2 | bash -s sub.example.com
-</pre>
-</body>
+  <body>
+    <pre onclick="selectText(this)">
+curl -L fmt.re/vps/init | bash -s ymattw</pre
+    >
+    <pre onclick="selectText(this)">
+curl -L fmt.re/vps/v2 | bash -s sub.example.com</pre
+    >
+
+    <script>
+      function selectText(element) {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    </script>
+  </body>
 </html>
