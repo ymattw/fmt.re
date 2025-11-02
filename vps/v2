@@ -1,18 +1,26 @@
 #!/bin/bash
-# Script to setup v2ray on a VPS. Verified versions: Ubuntu 22.04.1 LTS, Debian 12.
-# Requires sudo and docker environment (see vps.sh).
+# Script to setup VLESS + WebSocket + TLS (by Caddy) + CDN on a VPS, requires
+# a domain name. Verified versions: Ubuntu 22.04.1 LTS, Debian 12. Requires
+# sudo and docker environment (see vps.sh).
 #
-# Example usage: curl -L fmt.re/vps/v2 | bash -s ymattw vps.example.com
+# Prerequisites:
+# - Essential pacakges are installed via script ./init
+# - Cloudflare: Proxy status is set to "Proxied" for the domain
+#
+# Example usage: curl -L fmt.re/vps/v2 | bash -s sub.example.com
+# Output: a QR code for Shadowrocket to scan and add a server quickly
 
 set -o errexit
 set -o nounset
 
-GITHUB_ID="${1?:'Usage: $0 <github_username> <remark_prefix>'}"
-REMARK="${2?:'Usage: $0 <github_username> <remark_prefix>'}"
+OWNER=${SUDO_USER:-$USER}
+[[ $OWNER != root ]] || { echo "Please run as a normal user." >&2; exit 1; }
+
+DOMAIN="${1?:'Usage: $0 <sub.example.com>'}"
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
-IMAGE="v2fly/v2fly-core:v5.30.0"
+IMAGE="ghcr.io/xtls/xray-core:25.10.15"
 DIR="/opt/v2"
 PORT="60066"
 CONFIG="$DIR/config.json"
@@ -20,10 +28,37 @@ CONTAINER="v2"
 
 function main
 {
+    setup_caddy
     setup_config
     setup_start
     start
     print_qr
+}
+
+function setup_caddy
+{
+    local config="/etc/caddy/Caddyfile"
+    local escaped="${DOMAIN//./\\.}"
+
+    echo "Updating $config for domain $DOMAIN"
+    sudo sed -ri "/^[[:blank:]]*${escaped} \{$/,/^[[:blank:]]*\{$/d" $config
+    cat << EOT | sudo tee -a $config > /dev/null
+        $DOMAIN {
+            route /vless* {
+                reverse_proxy 127.0.0.1:$PORT {
+                header_up Host {host}
+                header_up X-Real-IP {remote_host}
+                header_up X-Forwarded-For {remote_host}
+                }
+            }
+            route /* {
+                respond "It works!" 200
+            }
+        }
+EOT
+    sudo caddy fmt --overwrite $config
+    cat $config
+    sudo systemctl reload caddy
 }
 
 function _get_uuid
@@ -44,6 +79,7 @@ function setup_config
 
     uuid=$(_get_uuid)
     echo "Writing $CONFIG with uuid '$uuid'"
+    # NOTE: "security" is none, TLS will be handled by caddy
     cat << EOT | sed -r 's/^ {4}//g' | sudo tee $CONFIG
     {
         "log": {
@@ -54,13 +90,21 @@ function setup_config
         "inbounds": [
             {
                 "port": $PORT,
-                "protocol": "vmess",
+                "protocol": "vless",
                 "settings": {
                     "clients": [
                         {
                             "id": "$uuid"
                         }
-                    ]
+                    ],
+                    "decryption": "none"
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "path": "/vless"
+                    },
+                    "security": "none"
                 }
             }
         ],
@@ -73,14 +117,19 @@ function setup_config
     }
 EOT
 
-    sudo chmod 600 $CONFIG
+    # NOTE: UID 65532 is hard coded in gcr.io/distroless/static:nonroot
+    sudo chown -R $OWNER:65532 $DIR
+    sudo chmod 750 $DIR
+    sudo touch $DIR/{access,error}.log
+    sudo chmod 660 $CONFIG $DIR/{access,error}.log
 
     # Write qr.sh to display client config as QR image
     local encoded title url
-    encoded=$(echo -n "auto:$uuid@$(curl -s4 ip.me):$PORT" | base64 --wrap 0)
-    title="${REMARK}-vmess"
-    url="vmess://${encoded}?remarks=$title&obfs=none&alterId=0"
+    encoded=$(echo -n "auto:$uuid@$DOMAIN:443" | base64 --wrap 0)
+    title=$(curl -s4 http://ip-api.com/line?fields=city)
+    url="vless://${encoded}?path=/vless&remarks=$title&obfs=websocket&tls=1&fragment=auto&mode=auto"
     echo -e "#/bin/sh\necho '$url' | qrencode -t utf8" | sudo tee $DIR/qr.sh
+    sudo chown $OWNER:65532 $DIR/qr.sh
     sudo chmod 700 $DIR/qr.sh
 }
 
@@ -95,9 +144,8 @@ function setup_start
         run -c $CONFIG \
         | sudo tee $DIR/start.sh
 
-    sudo touch $DIR/{access,error}.log
-    sudo chown -R $GITHUB_ID $DIR
-    sudo chmod +x $DIR/start.sh
+    sudo chown $OWNER:65532 $DIR/start.sh
+    sudo chmod 700 $DIR/start.sh
 }
 
 function start
@@ -109,12 +157,12 @@ function start
     fi
 
     echo "Starting container '$CONTAINER'"
-    sudo -H -u $GITHUB_ID $DIR/start.sh
+    sudo -H -u $OWNER $DIR/start.sh
 }
 
 function print_qr
 {
-    sudo -H -u $GITHUB_ID $DIR/qr.sh
+    sudo -H -u $OWNER $DIR/qr.sh
 }
 
 main "$@"
