@@ -1,7 +1,6 @@
 #!/bin/bash
 # Script to setup VLESS + WebSocket + TLS (by Caddy) + CDN on a VPS, requires
-# a domain name. Verified versions: Ubuntu 22.04.1 LTS, Debian 12. Requires
-# sudo and docker environment (see vps.sh).
+# a domain name. Verified versions: Debian 12.
 #
 # Prerequisites:
 # - Essential pacakges are installed via script ./init
@@ -44,7 +43,7 @@ function setup_caddy
     sudo sed -ri "/^[[:blank:]]*${escaped} \{$/,/^[[:blank:]]*\{$/d" $config
     cat << EOT | sudo tee -a $config > /dev/null
         $DOMAIN {
-            route /vless* {
+            route /vless {
                 reverse_proxy 127.0.0.1:$PORT {
                 header_up Host {host}
                 header_up X-Real-IP {remote_host}

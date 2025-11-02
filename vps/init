@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to setup account on VPS, verified versions: Ubuntu 22.04, Debian 12.
+# Script to setup account on VPS, verified versions: Debian 12.
 #
 # Example usage: curl -L fmt.re/vps/init | bash -s ymattw
 
