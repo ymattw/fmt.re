@@ -8,6 +8,9 @@
 #
 # Example usage: curl -L fmt.re/vps/v2 | bash -s sub.example.com
 # Output: a QR code for Shadowrocket to scan and add a server quickly
+#
+# Example config for xray clients cound be found at
+# https://gist.github.com/ymattw/ca144552d6a856fc39d9ac595f37eaf5
 
 set -o errexit
 set -o nounset
