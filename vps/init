@@ -25,10 +25,16 @@ function main
     disable_rpcbind
 }
 
+function info
+{
+    echo -e "\e[32m$*\e[0m"
+}
+
 function install_pkgs
 {
     sudo apt update -y
     sudo apt install -y \
+        caddy \
         cron \
         curl \
         docker.io \
@@ -51,7 +57,7 @@ function create_user
 {
     ! id $GITHUB_ID >& /dev/null || return 0
 
-    echo "Creating user $GITHUB_ID"
+    info "Creating user $GITHUB_ID"
     sudo useradd --home-dir /home/$GITHUB_ID --create-home \
         --shell /bin/zsh $GITHUB_ID
     id $GITHUB_ID
@@ -103,7 +109,7 @@ function setup_public_key
     local pkey=${2:?}
 
     ! sudo grep -qF "$pkey" $key_file || return 0
-    echo "Adding ssh public key: $pkey"
+    info "Adding ssh public key: $pkey"
     echo "$pkey" | sudo tee -a $key_file
 }
 
@@ -111,7 +117,7 @@ function setup_sshd
 {
     ! grep -q '^Port 60022$' /etc/ssh/sshd_config || return 0
 
-    echo "Updating ssh listening port from 22 to 60022 / disable root login"
+    info "Updating ssh listening port from 22 to 60022 / disable root login"
     sudo sed -i'' -r \
         -e 's/^#?\s*Port 22$/Port 60022/' \
         -e 's/^#?\s*PermitRootLogin .*/PermitRootLogin no/' \
@@ -123,7 +129,7 @@ function setup_sudo
 {
     ! sudo -l -U $GITHUB_ID | grep -Eq "NOPASSWD:[[:blank:]]*ALL" || return 0
 
-    echo "Add sudoer entry file for $GITHUB_ID"
+    info "Add sudoer entry file for $GITHUB_ID"
     echo "$GITHUB_ID ALL=(ALL:ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/$GITHUB_ID
     sudo chmod 440 /etc/sudoers.d/$GITHUB_ID
     sudo -l -U $GITHUB_ID

@@ -37,16 +37,24 @@ function main
     print_qr
 }
 
+function info
+{
+    echo -e "\e[32m$*\e[0m"
+}
+
 function setup_caddy
 {
     local config="/etc/caddy/Caddyfile"
     local escaped="${DOMAIN//./\\.}"
+    local tmpf=/tmp/Caddyfile.$$
 
-    echo "Updating $config for domain $DOMAIN"
-    sudo sed -ri "/^[[:blank:]]*${escaped} \{$/,/^[[:blank:]]*\{$/d" $config
-    cat << EOT | sudo tee -a $config > /dev/null
+    trap "rm -f $tmpf" EXIT
+
+    info "Updating $config for domain $DOMAIN"
+    sed -r "/^[[:blank:]]*${escaped} \{$/,/^[[:blank:]]*\{$/d" $config > $tmpf
+    cat << EOT | tee -a $tmpf > /dev/null
         $DOMAIN {
-            route /vless {
+            route /vless  {
                 reverse_proxy 127.0.0.1:$PORT {
                 header_up Host {host}
                 header_up X-Real-IP {remote_host}
@@ -58,8 +66,9 @@ function setup_caddy
             }
         }
 EOT
-    sudo caddy fmt --overwrite $config
-    cat $config
+    caddy fmt --overwrite $tmpf
+    ! diff -u $config $tmpf || return 0
+    sudo cp $tmpf $config
     sudo systemctl reload caddy
 }
 
@@ -67,7 +76,7 @@ function _get_uuid
 {
     # Read current uuid
     local uuid=$(grep -Eo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' $CONFIG 2>/dev/null)
-    if [[ -z $uuid ]] || [[ $uuid == __UUID__ ]]; then
+    if [[ -z $uuid ]]; then
         uuid=$(cat /proc/sys/kernel/random/uuid)
     fi
     echo "$uuid"
@@ -80,7 +89,7 @@ function setup_config
     sudo mkdir -p $DIR
 
     uuid=$(_get_uuid)
-    echo "Writing $CONFIG with uuid '$uuid'"
+    info "Writing $CONFIG with uuid '$uuid'"
     # NOTE: "security" is none, TLS will be handled by caddy
     cat << EOT | sed -r 's/^ {4}//g' | sudo tee $CONFIG
     {
@@ -125,7 +134,7 @@ EOT
     sudo touch $DIR/{access,error}.log
     sudo chmod 660 $CONFIG $DIR/{access,error}.log
 
-    # Write qr.sh to display client config as QR image
+    info "Writing $DIR/qr.sh for displaying client config as QR image"
     local encoded title url
     encoded=$(echo -n "auto:$uuid@$DOMAIN:443" | base64 --wrap 0)
     title=$(curl -s4 http://ip-api.com/line?fields=city)
@@ -137,6 +146,7 @@ EOT
 
 function setup_start
 {
+    info "Writing startup script $DIR/start.sh"
     echo -e "#!/bin/sh\ndocker" \
         run --restart=unless-stopped -d \
         --name=$CONTAINER \
@@ -158,12 +168,13 @@ function start
         docker rm $CONTAINER
     fi
 
-    echo "Starting container '$CONTAINER'"
+    info "Starting container '$CONTAINER'"
     sudo -H -u $OWNER $DIR/start.sh
 }
 
 function print_qr
 {
+    info "Open Shadowrocket and scan below QR image to add the server:"
     sudo -H -u $OWNER $DIR/qr.sh
 }
 
