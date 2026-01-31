@@ -151,7 +151,8 @@ function setup_start
         run --restart=unless-stopped -d \
         --name=$CONTAINER \
         -v $DIR:$DIR \
-        -p $PORT:$PORT \
+        -p 127.0.0.1:$PORT:$PORT \
+        -p "[::1]:$PORT:$PORT" \
         $IMAGE \
         run -c $CONFIG \
         | sudo tee $DIR/start.sh
