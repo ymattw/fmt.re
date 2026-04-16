@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to setup account on VPS, verified versions: Debian 12.
+# Script to setup account on VPS, verified versions: Debian 13.
 #
 # Example usage: curl -L fmt.re/vps/init | bash -s ymattw
 
@@ -140,7 +140,7 @@ function setup_kernal_params
     # https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes
     echo "net.core.rmem_max=7500000" | sudo tee /etc/sysctl.d/99-udp-buffer-sizes
     echo "net.core.wmem_max=7500000" | sudo tee -a /etc/sysctl.d/99-udp-buffer-sizes
-    sudo sysctl -p
+    sudo sysctl --system
 }
 
 function setup_firewall
